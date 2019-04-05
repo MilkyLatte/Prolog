@@ -79,3 +79,12 @@ children(Node, Children):-
 children(_, Children):-
   [] = Children.
 
+
+
+heuristic(Path, Target, Result) :-
+    last(Path, Last),
+    map_distance(Last, Target, Distance),
+    length(Path, L),
+    Result is L+Distance.
+  
+
