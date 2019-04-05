@@ -1,11 +1,11 @@
-candidate_number(12345).
+candidate_number(39473).
 
-solve_task(Task,Cost):-
-  my_agent(Agent),
-  query_world( agent_current_position, [Agent,P] ),
-  solve_task_bt(Task,[c(0,P),P],0,R,Cost,_NewPos),!,  % prune choice point for efficiency
-  reverse(R,[_Init|Path]),
-  query_world( agent_do_moves, [Agent,Path] ).
+% solve_task(Task,Cost):-
+%   my_agent(Agent),
+%   query_world( agent_current_position, [Agent,P] ),
+%   solve_task_bt(Task,[c(0,P),P],0,R,Cost,_NewPos),!,  % prune choice point for efficiency
+%   reverse(R,[_Init|Path]),
+%   query_world( agent_do_moves, [Agent,Path] ).
 
 %%%%%%%%%% Useful predicates %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% backtracking depth-first search, needs to be changed to agenda-based A*
@@ -47,7 +47,6 @@ search(F,N,N,1) :-
 %   append(CurrentChecked, Current, Puta),
 %   search_bf(Puta, Rest, Goal).
 %   % search_bf(Visited, NewAgenda, Goal).
-
  
 % my_search([Goal|_Visited], Goal, Length) :-
 %   print(Length).
@@ -56,15 +55,23 @@ search(F,N,N,1) :-
 %   append(Next, Children, Agenda),
 %   my_search(Agenda, Goal, Length+1).
 
+solve_task(Task,Cost):-
+  my_agent(Agent),
+  query_world( agent_current_position, [Agent,P] ),
+  bfs(Task, [c(0,P),P],0,R,Cost,_NewPos, Path),!,  % prune choice point for efficiency
+  query_world( agent_do_moves, [Agent,Path] ).
 
-bfs([[Target|Path]|_], Target) :- print([Target|Path]).
-bfs(Queue, Target) :-
+
+bfs(Task, [[Target|Path]|_], Depth, Cost, Target, Result) :- 
+  reverse(Result, [Target|Path]).
+
+bfs(Queue, Target, Result) :-
   Queue=[Path|Rest],
   Path = [Node|_],
   children(Node, Children),
   checkRepeated(Children, Queue, NonRepeated),
   forLoop(NonRepeated, Path, Rest, NewQueue),
-  bfs(NewQueue, Target).
+  bfs(NewQueue, Target, Result).
 
   
 checkRepeated(Children, [], NonRepeated):- Children = NonRepeated.
@@ -87,7 +94,11 @@ forLoop(Kids, CurrentPath, Queue, Result) :-
   
 
 children(Node, Children):-
+  % print("Child1"),
   setof(A, search(Node, A, A, 1), Children).
+children(_, Children):-
+  % print("Child2"),
+  [] = Children.
 
 goal([p(2,1)|_Visited]).
 
