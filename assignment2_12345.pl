@@ -33,47 +33,29 @@ achieved(find(O),Current,RPath,Cost,NewPos) :-
 search(F,N,N,1) :-
   map_adjacent(F,N,empty).
 
-
-
-% search_bf([Goal|_Visited], _,Goal):- true.
-% search_bf(Current, Agenda, Goal):- 
-%   print(Current),
-%   Agenda = [C|_],
-%   children(C,More),
-%   exclude([P]>>memberchk(P, Agenda), More, Checked),
-%   append(Agenda, Checked, NewAgenda),
-%   NewAgenda = [Next|Rest],
-%   exclude([P]>>memberchk(P, Current), [Next], CurrentChecked),
-%   append(CurrentChecked, Current, Puta),
-%   search_bf(Puta, Rest, Goal).
-%   % search_bf(Visited, NewAgenda, Goal).
- 
-% my_search([Goal|_Visited], Goal, Length) :-
-%   print(Length).
-% my_search([Current|Next], Goal, Length):-
-%   children(Current, Children),
-%   append(Next, Children, Agenda),
-%   my_search(Agenda, Goal, Length+1).
+% -----------------------------------
+% temp moving
 
 solve_task(Task,Cost):-
   my_agent(Agent),
   query_world( agent_current_position, [Agent,P] ),
-  bfs(Task, [c(0,P),P],0,R,Cost,_NewPos, Path),!,  % prune choice point for efficiency
+  bfs(Task, [[P]], [P|Path]),!,
+  print(Path),
   query_world( agent_do_moves, [Agent,Path] ).
 
-
-bfs(Task, [[Target|Path]|_], Depth, Cost, Target, Result) :- 
+bfs(go(Target), [[Target|Path]|_],  Result) :- 
+  print("reach"),
   reverse(Result, [Target|Path]).
 
-bfs(Queue, Target, Result) :-
+bfs(Task, Queue, Result) :-
+  print("depth"),
   Queue=[Path|Rest],
   Path = [Node|_],
   children(Node, Children),
   checkRepeated(Children, Queue, NonRepeated),
   forLoop(NonRepeated, Path, Rest, NewQueue),
-  bfs(NewQueue, Target, Result).
+  bfs(Task, NewQueue, Result).
 
-  
 checkRepeated(Children, [], NonRepeated):- Children = NonRepeated.
 checkRepeated([], _,NonRepeated):- [] = NonRepeated.
 checkRepeated(Children, Queue, NonRepeated):-
@@ -91,14 +73,9 @@ forLoop(Kids, CurrentPath, Queue, Result) :-
     append(Queue, [NewPath], NewQueue),
     forLoop(Children, CurrentPath, NewQueue, Result).
 
-  
 
 children(Node, Children):-
-  % print("Child1"),
   setof(A, search(Node, A, A, 1), Children).
 children(_, Children):-
-  % print("Child2"),
   [] = Children.
-
-goal([p(2,1)|_Visited]).
 
