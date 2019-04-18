@@ -30,100 +30,144 @@ achieved(find(O),Current,RPath,Cost,NewPos) :-
   ; otherwise -> RPath = [Last|_],map_adjacent(Last,_,O)
   ).
 
-search(F,N,N,1) :-
-  map_adjacent(F,N,empty).
+search(F,N,O) :-
+  map_adjacent(F,N,O).
 
 % -----------------------------------
 % temp moving
 
-solve_task(Task,Cost):-
-  my_agent(Agent),
-  query_world( agent_current_position, [Agent,P] ),
-  bfs(Task, [[P]], [P|Path]),!,
-  print(Path),
-  query_world( agent_do_moves, [Agent,Path] ).
-
-% bfs(go(Target), [[Target|Path]|_],  Result) :- 
-%   print("reach"),
-%   reverse(Result, [Target|Path]).
-
-% bfs(Task, Queue, Result) :-
-%   print("depth"),
-%   Queue=[Path|Rest],
-%   Path = [Node|_],
-%   children(Node, Children),
-%   checkRepeated(Children, Queue, NonRepeated),
-%   forLoop(NonRepeated, Path, Rest, NewQueue),
-%   bfs(Task, NewQueue, Result).
-
-checkRepeated(Children, [], NonRepeated):- Children = NonRepeated.
-checkRepeated([], _,NonRepeated):- [] = NonRepeated.
-checkRepeated(Children, Queue, NonRepeated):-
-  Queue = [(Path, Score)|Rest],
-  exclude([P]>>memberchk(P, Path), Children, Result),
-  checkRepeated(Result, Rest, NonRepeated).
-
-
-
-
-
 children(Node, Children):-
-  setof(A, search(Node, A, A, 1), Children).
-children(_, Children):-
-  [] = Children.
+  setof((A, B) , search(Node, A, B), Children).
+children(_, Children) :-
+    []=Children.
 
 
+
+checkRepeated(Children, [], NonRepeated) :-
+    Children=NonRepeated.
+checkRepeated([], _, NonRepeated) :-
+    []=NonRepeated.
+checkRepeated(Children, Agenda, NonRepeated) :-
+    Agenda=[(Path, _, _)|Rest],
+    exclude([P]>>memberchk(P, Path), Children, Result),
+    checkRepeated(Result, Rest, NonRepeated).
+
+test(Result) :-
+    children(p(1, 1), Children),
+    checkRepeated(Children, [([(p(1, 1), empty)],_,_)], Result).
+ 
+
+navigate(From, Target, Best) :-
+  % function that gets the current fuel of the agent
+  % function that gets current position of the agent
+    estrella(Target, [([(From, empty)],8,_)], Best).
+
+
+estrella(Target, [([(Target, Type)|Path], Fuel, Score)|Rest], BestPath):-
+([(Target, Type)|Path], Fuel, Score) = BestPath.
+
+estrella(Target, Agenda, BestPath) :-
+  Agenda = [Path|Paths],
+  Path = ([(Current, _)|Rest], Fuel, Score),
+  print(Fuel),
+  print(Current),
+  children(Current, Children),
+
+  checkRepeated(Children, Agenda, Result),
+
+  processPath(Result, Path, Target, NewPath),
+
+  addChildren(Result, NewPath, Paths, NewAgenda),
+
+  estrella(Target, NewAgenda, BestPath).
+
+
+addChildren([], _, Agenda, Result):-
+  Agenda = Result.
+addChildren(Children, CurrentPath, Agenda, Result) :-
+    Children=[Kid|Kids],
+    Kid=(Node, Type),
+    CurrentPath=(Path, Fuel, Score),
+    (Fuel > 5 -> 
+      (   Type=empty
+      ->  append([Kid], Path, NewPath),
+          NewFuel is Fuel -1,
+          append(Agenda,[(NewPath, NewFuel, Score)],NewAgenda),
+          addChildren(Kids, CurrentPath, NewAgenda, Result)
+      ;   otherwise
+      ->  addChildren(Kids, CurrentPath, Agenda, Result)
+      )
+      ; otherwise -> Agenda = [_|Many], Many = Result
+      ).
 
 heuristic(Path, Target, Result) :-
-  Path=([First|String], Score),
-  map_distance(First, Target, Distance),
-  length([First|String], L),
-  Result is L+Distance-1. 
+    Path=([First|Others], Fuel, _),
+    First=(Node, _),
+    map_distance(Node, Target, Distance),
+    (   Fuel=0
+    ->  H is 90+10*Distance
+    ;   otherwise
+    ->  H is 90*1/Fuel+10*Distance
+    ),
+    length([First|Others], L),
+    G is L,
+    Result is G+H.
 
 
-forLoop([], _, Queue, Result):-
-  Queue = Result.
-forLoop(Kids, CurrentPath, Queue, Result) :-
-    Kids=[Child|Children],
-    CurrentPath = (C, S),
-    append([Child], C, NewPath), 
-    append(Queue, [(NewPath, S)], NewQueue),
-    forLoop(Children, CurrentPath, NewQueue, Result).
+processPath([], CurrentPath, Target, Result):-
+  CurrentPath = (Path, Fuel, _),
+  heuristic(CurrentPath, Target, NewScore),
+  (Path, Fuel, NewScore) = Result.
 
-% a_star(Target, [([Target|Path],Score)|_], Result) :-
-%     reverse(R, [Target|Path]),
-%     (R, Score) = Result.
-% a_star(Target, Queue, Result) :-
-%     print(Queue),
-%     Queue=[Path|Rest],   
-%     heuristic(Path, Target, Score),
-%     Path=([Node|Nodes], S),
-%     ([Node|Nodes], Score) = NewPath,    
+processPath(Children, CurrentPath, Target, Result):-
+  Children = [Kid|Kids],
+  Kid = (_, Type),
+  CurrentPath = (Path, _, Score),
+  (Type = c(_) -> NewFuel is 100,
+  (Path, NewFuel, Score, Type) = NewPath,
+  processPath(Kids, NewPath, Target, Result)
+  ; otherwise -> processPath(Kids, CurrentPath, Target, Result)).
+
+
+
+
+
+
+
+%   bfs(go(Target), [[Target|Path]|_], Result) :-
+%     print("reach"),
+%     reverse(Result, [Target|Path]).
+
+% bfs(Task, Queue, Result) :-
+%     print("depth"),
+%     Queue=[Path|Rest],
+%     Path=[Node|_],
 %     children(Node, Children),
-%     checkRepeated(Children, Rest, NonRepeated),
-%     forLoop(NonRepeated, NewPath, Rest, NewQueue), %Path ([PATH], score)
-%     a_star(Target, NewQueue, Result).
+%     checkRepeated(Children, Queue, NonRepeated),
+%     forLoop(NonRepeated, Path, Rest, NewQueue),
+%     bfs(Task, NewQueue, Result).
 
-test(List, Add, Result):-
-  (List, Add) = Result.
+% checkRepeated(Children, [], NonRepeated) :-
+%     Children=NonRepeated.
+% checkRepeated([], _, NonRepeated) :-
+%     []=NonRepeated.
+% checkRepeated(Children, Queue, NonRepeated) :-
+%     Queue=[Path|Rest],
+%     exclude([P]>>memberchk(P, Path), Children, Result),
+%     checkRepeated(Result, Rest, NonRepeated).
 
 
-a_star(Target, [([Target|Path],Score)|Rest], BestPath, Result):-
-  reverse(R, [Target|Path]),
-  BestPath = (_, BScore),
-  (Score < BScore -> ([Target|Path], Score) = BestPath),
-  print("HERE").
 
-    % BestPath = (BP, Update),
-    % (Update < 10 -> BP = Result
-    % ; otherwise -> a_star(Target, Rest, BestPath, Result)).
+% forLoop([], _, Queue, Result) :-
+%     Queue=Result.
+% forLoop(Kids, CurrentPath, Queue, Result) :-
+%     Kids=[Child|Children],
+%     append([Child], CurrentPath, NewPath),
+%     append(Queue, [NewPath], NewQueue),
+%     forLoop(Children, CurrentPath, NewQueue, Result).
 
-a_star(Target, Queue, BestPath, Result) :-
-    Queue=[Path|Rest],   
-    heuristic(Path, Target, Score),
-    Path=([Node|Nodes], S),
-    ([Node|Nodes], Score) = NewPath,    
-    children(Node, Children),
-    checkRepeated(Children, Rest, NonRepeated),
-    forLoop(NonRepeated, NewPath, Rest, NewQueue), 
-    a_star(Target, NewQueue, BestPath, Result).
+
+% children(Node, Children) :-
+%     setof(A, search(Node, A, A, 1), Children).
+% children(_, Children) :-
+%     []=Children.
