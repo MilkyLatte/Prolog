@@ -41,16 +41,9 @@ children(Node, Children):-
 children(_, Children) :-
     []=Children.
 
-
-
-checkRepeated(Children, [], NonRepeated) :-
-    Children=NonRepeated.
-checkRepeated([], _, NonRepeated) :-
-    []=NonRepeated.
-checkRepeated(Children, Agenda, NonRepeated) :-
-    Agenda=[(Path, _, _)|Rest],
-    exclude([P]>>memberchk(P, Path), Children, Result),
-    checkRepeated(Result, Rest, NonRepeated).
+checkRepeated(Children, Current, NonRepeated) :-
+    Current = (Path, _, _),
+    exclude([P]>>memberchk(P, Path), Children, NonRepeated).
 
 test(Result) :-
     children(p(1, 1), Children),
@@ -64,21 +57,15 @@ navigate(From, Target, Best) :-
 
 
 estrella(Target, [([(Target, Type)|Path], Fuel, Score)|Rest], BestPath):-
-([(Target, Type)|Path], Fuel, Score) = BestPath.
+  ([(Target, Type)|Path], Fuel, Score) = BestPath.
 
 estrella(Target, Agenda, BestPath) :-
   Agenda = [Path|Paths],
   Path = ([(Current, _)|Rest], Fuel, Score),
-  print(Fuel),
-  print(Current),
   children(Current, Children),
-
-  checkRepeated(Children, Agenda, Result),
-
+  checkRepeated(Children, Path, Result),
   processPath(Result, Path, Target, NewPath),
-
   addChildren(Result, NewPath, Paths, NewAgenda),
-
   estrella(Target, NewAgenda, BestPath).
 
 
