@@ -56,7 +56,7 @@ heuristic(Path, Target, Result) :-
     (   Fuel=0
     ->  H is Distance
     ;   otherwise
-    ->  H is 100 * 1/Fuel + Distance
+    ->  H is 250 * 1/Fuel + Distance
     ),
     length([First|Others], L),
     G is L,
@@ -109,7 +109,6 @@ sampleNElements(Counter, List, Temp, Result):-
 
 
 estrella(Target, [([(Target, Type)|Path], Fuel, Score)|Rest], InitialScore, BestPath):-
-  print(Rest),
   ([(Target, Type)|Path], Fuel, Score) = BestPath,!.
 
 estrella(Target, Agenda, InitialScore,BestPath) :-
@@ -133,7 +132,7 @@ addChildren(Children, CurrentPath, Agenda, InitialScore, Result) :-
     New is Score - InitialScore,
     print("SCORE:"),
     writeln(New),
-    (New < 10 -> 
+    (New < 40 -> 
       (   Type=empty
       ->  append([(Node, Type)], Path, NewPath),
           NewFuel is Fuel -1,
