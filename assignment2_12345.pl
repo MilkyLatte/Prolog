@@ -35,11 +35,18 @@ search(F,N,O) :-
 
 % -----------------------------------
 % temp moving
+solve_task(Task, Cost):-
+  Task = go(Target),
+  my_agent(Agent),
+  query_world( agent_current_position, [Agent,P] ),
+  estrella(Target, [([(P, empty)], 100, Cost)], Best), 
+  Best = (TupledPath, _, _),
+  convertPath(TupledPath, [], [_Init|Path]),
+  query_world( agent_do_moves, [Agent,Path] ).
 
+children([], []).
 children(Node, Children):-
   setof((A, B) , search(Node, A, B), Children).
-children(_, Children) :-
-    []=Children.
 
 checkRepeated(Children, Current, NonRepeated) :-
     Current = (Path, _, _),
@@ -49,12 +56,12 @@ test(Result) :-
     children(p(1, 1), Children),
     checkRepeated(Children, [([(p(1, 1), empty)],_,_)], Result).
  
-
-navigate(From, Target, Best) :-
+navigate(From, Target, Path) :-
   % function that gets the current fuel of the agent
   % function that gets current position of the agent
-    estrella(Target, [([(From, empty)],8,_)], Best).
-
+    estrella(Target, [([(From, empty)], 100, _)], Best),
+    Best = (TupledPath, _, _),
+    convertPath(TupledPath, [], Path),!.
 
 estrella(Target, [([(Target, Type)|Path], Fuel, Score)|Rest], BestPath):-
   ([(Target, Type)|Path], Fuel, Score) = BestPath.
@@ -68,16 +75,14 @@ estrella(Target, Agenda, BestPath) :-
   addChildren(Result, NewPath, Paths, NewAgenda),
   estrella(Target, NewAgenda, BestPath).
 
-
 addChildren([], _, Agenda, Result):-
   Agenda = Result.
 addChildren(Children, CurrentPath, Agenda, Result) :-
-    Children=[Kid|Kids],
-    Kid=(Node, Type),
+    Children=[(Node, Type)|Kids],
     CurrentPath=(Path, Fuel, Score),
     (Fuel > 5 -> 
       (   Type=empty
-      ->  append([Kid], Path, NewPath),
+      ->  append([(Node, Type)], Path, NewPath),
           NewFuel is Fuel -1,
           append(Agenda,[(NewPath, NewFuel, Score)],NewAgenda),
           addChildren(Kids, CurrentPath, NewAgenda, Result)
@@ -89,17 +94,13 @@ addChildren(Children, CurrentPath, Agenda, Result) :-
 
 heuristic(Path, Target, Result) :-
     Path=([First|Others], Fuel, _),
-    First=(Node, _),
+    First = (Node, _),
     map_distance(Node, Target, Distance),
-    (   Fuel=0
-    ->  H is 90+10*Distance
-    ;   otherwise
-    ->  H is 90*1/Fuel+10*Distance
-    ),
+    ( Fuel=0 ->  H is 90+10*Distance;
+      otherwise ->  H is 90*1/Fuel+10*Distance),
     length([First|Others], L),
     G is L,
     Result is G+H.
-
 
 processPath([], CurrentPath, Target, Result):-
   CurrentPath = (Path, Fuel, _),
@@ -107,23 +108,25 @@ processPath([], CurrentPath, Target, Result):-
   (Path, Fuel, NewScore) = Result.
 
 processPath(Children, CurrentPath, Target, Result):-
-  Children = [Kid|Kids],
-  Kid = (_, Type),
+  Children = [(_, Type)|Kids],
   CurrentPath = (Path, _, Score),
   (Type = c(_) -> NewFuel is 100,
-  (Path, NewFuel, Score, Type) = NewPath,
+  (Path, NewFuel, Score) = NewPath,
   processPath(Kids, NewPath, Target, Result)
   ; otherwise -> processPath(Kids, CurrentPath, Target, Result)).
-
-
-
-
-
 
 
 %   bfs(go(Target), [[Target|Path]|_], Result) :-
 %     print("reach"),
 %     reverse(Result, [Target|Path]).
+
+convertPath([], [], []).
+convertPath([], Path, Result):- 
+  Path = Result,!.
+convertPath(TupledPath, Path, Result):-
+  TupledPath = [(Pos, _)|Rest],
+  append([Pos], Path, NewPath),
+  convertPath(Rest, NewPath, Result).
 
 % bfs(Task, Queue, Result) :-
 %     print("depth"),
@@ -142,8 +145,6 @@ processPath(Children, CurrentPath, Target, Result):-
 %     Queue=[Path|Rest],
 %     exclude([P]>>memberchk(P, Path), Children, Result),
 %     checkRepeated(Result, Rest, NonRepeated).
-
-
 
 % forLoop([], _, Queue, Result) :-
 %     Queue=Result.
