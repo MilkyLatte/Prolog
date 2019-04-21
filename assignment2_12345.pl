@@ -38,11 +38,24 @@ search(F,N,O) :-
 solve_task(Task, Cost):-
   Task = go(Target),
   my_agent(Agent),
-  query_world( agent_current_position, [Agent,P] ),
-  estrella(Target, [([(P, empty)], 100, Cost)], Best), 
+  query_world(agent_current_position, [Agent,P]),
+  query_world(agent_current_energy, [Agent, E]), 
+  estrella(Target, [([(P, empty)], E, Cost)], Best), 
   Best = (TupledPath, _, _),
   convertPath(TupledPath, [], [_Init|Path]),
-  query_world( agent_do_moves, [Agent,Path] ).
+  moveNTopup(Path, Agent).
+
+moveNTopup([]):- !.
+moveNTopup(Path, Agent):-
+  Path = [Node|Rest], 
+  query_world( agent_do_moves, [Agent,[Node]]),
+  ( map_adjacent(Node, _, c(C)) -> 
+      print("topup"),
+      query_world(agent_top_energy, [Agent, c(C)]), 
+      moveNTopup(Rest, Agent);
+    otherwise -> 
+      print("nothing"),
+      moveNTopup(Rest, Agent)).
 
 children([], []).
 children(Node, Children):-
@@ -56,15 +69,9 @@ test(Result) :-
     children(p(1, 1), Children),
     checkRepeated(Children, [([(p(1, 1), empty)],_,_)], Result).
  
-navigate(From, Target, Path) :-
-  % function that gets the current fuel of the agent
-  % function that gets current position of the agent
-    estrella(Target, [([(From, empty)], 100, _)], Best),
-    Best = (TupledPath, _, _),
-    convertPath(TupledPath, [], Path),!.
 
 estrella(Target, [([(Target, Type)|Path], Fuel, Score)|Rest], BestPath):-
-  ([(Target, Type)|Path], Fuel, Score) = BestPath.
+  ([(Target, Type)|Path], Fuel, Score) = BestPath,!.
 
 estrella(Target, Agenda, BestPath) :-
   Agenda = [Path|Paths],
