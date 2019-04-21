@@ -44,7 +44,7 @@ solve_task(Task, Cost):-
   heuristic(Initial, Target, Result),
   estrella(Target, [Initial],Result, Best), 
   Best = (TupledPath, _, _),
-  convertPath(TupledPath, [], [_Init|Path]),
+  reverse(TupledPath, [_Init|Path]),
   moveNTopup(Path, Agent).
 
 heuristic(Path, Target, Result) :-
@@ -145,7 +145,6 @@ addChildren(Children, CurrentPath, Agenda, InitialScore, Result) :-
       ).
 
 
-
 processPath([], CurrentPath, Target, Result):-
   CurrentPath = (Path, Fuel, _),
   heuristic(CurrentPath, Target, NewScore),
@@ -163,17 +162,6 @@ processPath(Children, CurrentPath, Target, Result):-
 %   bfs(go(Target), [[Target|Path]|_], Result) :-
 %     print("reach"),
 %     reverse(Result, [Target|Path]).
-
-convertPath([], [], []).
-convertPath([], Path, Result):- 
-  Path = Result,!.
-convertPath(TupledPath, Path, Result):-
-  TupledPath = [(Pos, _)|Rest],
-  append([Pos], Path, NewPath),
-  convertPath(Rest, NewPath, Result).
-
-
-
 
 
 % bfs(Task, Queue, Result) :-
