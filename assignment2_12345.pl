@@ -50,8 +50,8 @@ solve_task(Task, Cost):-
 heuristic(Path, Target, Result) :-
     Path=([First|Others], Fuel, _),
     First=(Node, _),
-    % print("HEAD AT:"),
-    % writeln(Node),
+    print("HEAD AT:"),
+    writeln(Node),
     map_distance(Node, Target, Distance),
     (   Fuel=0
     ->  H is Distance
@@ -113,8 +113,9 @@ estrella(Target, [([(Target, Type)|Path], Fuel, Score)|Rest], InitialScore, Best
   ([(Target, Type)|Path], Fuel, Score) = BestPath,!.
 
 estrella(Target, Agenda, InitialScore,BestPath) :-
+  writeln("============"),
   length(Agenda, Length),
-  (Length > 1000 -> sampleNElements(1000, Agenda, [], TheAgenda)
+  (Length > 1000 -> sampleNElements(500, Agenda, [], TheAgenda)
   ; otherwise -> Agenda = TheAgenda),
   TheAgenda = [Path|Paths],
   Path = ([(Current, _)|Rest], Fuel, Score),
@@ -130,8 +131,8 @@ addChildren(Children, CurrentPath, Agenda, InitialScore, Result) :-
     Children=[(Node, Type)|Kids],
     CurrentPath=(Path, Fuel, Score),
     New is Score - InitialScore,
-    % print("SCORE:"),
-    % print(New),
+    print("SCORE:"),
+    writeln(New),
     (New < 10 -> 
       (   Type=empty
       ->  append([(Node, Type)], Path, NewPath),
