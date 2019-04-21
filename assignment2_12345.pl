@@ -56,11 +56,11 @@ heuristic(Path, Target, Result) :-
     (   Fuel=0
     ->  H is Distance
     ;   otherwise
-    ->  H is Distance
+    ->  H is 10 * 1/Fuel + 0.9 * Distance
     ),
     length([First|Others], L),
     G is L,
-    Result is G+H.
+    Result is G + H.
 
 moveNTopup([], _):- print("here"), !.
 moveNTopup(Path, Agent):-
@@ -96,7 +96,16 @@ getNElements(Start, List, Temp,Result):-
   append(Temp, [One], New),
   getNElements(Next, Many, New, Result).
 
-
+sampleNElements(0, _, Temp, Result):-
+  Temp = Result, !.
+sampleNElements(Counter, List, Temp, Result):-
+  length(List, Length),
+  random(0, Length, Index),
+  nth0(Index, List, Elt),
+  append([Elt], Temp, NewTemp),
+  delete(List, Elt, NewList),
+  NewCounter is Counter - 1,
+  sampleNElements(NewCounter, NewList, NewTemp, Result).
 
 
 estrella(Target, [([(Target, Type)|Path], Fuel, Score)|Rest], InitialScore, BestPath):-
@@ -105,13 +114,10 @@ estrella(Target, [([(Target, Type)|Path], Fuel, Score)|Rest], InitialScore, Best
 
 estrella(Target, Agenda, InitialScore,BestPath) :-
   length(Agenda, Length),
-  (Length > 1000 -> getNElements(1000, Agenda, [], TheAgenda)
+  (Length > 1000 -> sampleNElements(1000, Agenda, [], TheAgenda)
   ; otherwise -> Agenda = TheAgenda),
   TheAgenda = [Path|Paths],
   Path = ([(Current, _)|Rest], Fuel, Score),
-  length(Rest, L),
-  print("LENGTH: "), 
-  writeln(L),
   children(Current, Children),
   checkRepeated(Children, Path, Result),
   processPath(Result, Path, Target, NewPath),
@@ -123,10 +129,10 @@ addChildren([], _, Agenda, InitialScore, Result):-
 addChildren(Children, CurrentPath, Agenda, InitialScore, Result) :-
     Children=[(Node, Type)|Kids],
     CurrentPath=(Path, Fuel, Score),
-    New is InitialScore - Score,
+    New is Score - InitialScore,
     % print("SCORE:"),
     % print(New),
-    (New = 0 -> 
+    (New < 10 -> 
       (   Type=empty
       ->  append([(Node, Type)], Path, NewPath),
           NewFuel is Fuel -1,
@@ -165,6 +171,10 @@ convertPath(TupledPath, Path, Result):-
   TupledPath = [(Pos, _)|Rest],
   append([Pos], Path, NewPath),
   convertPath(Rest, NewPath, Result).
+
+
+
+
 
 % bfs(Task, Queue, Result) :-
 %     print("depth"),
