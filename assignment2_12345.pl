@@ -40,10 +40,27 @@ solve_task(Task, Cost):-
   my_agent(Agent),
   query_world(agent_current_position, [Agent,P]),
   query_world(agent_current_energy, [Agent, E]), 
-  estrella(Target, [([(P, empty)], E, Cost)], Best), 
+  ([(P, empty)], E, Cost) = Initial,
+  heuristic(Initial, Target, Result),
+  estrella(Target, [Initial],Result, Best), 
   Best = (TupledPath, _, _),
   convertPath(TupledPath, [], [_Init|Path]),
   moveNTopup(Path, Agent).
+
+heuristic(Path, Target, Result) :-
+    Path=([First|Others], Fuel, _),
+    First=(Node, _),
+    % print("HEAD AT:"),
+    % writeln(Node),
+    map_distance(Node, Target, Distance),
+    (   Fuel=0
+    ->  H is Distance
+    ;   otherwise
+    ->  H is Distance
+    ),
+    length([First|Others], L),
+    G is L,
+    Result is G+H.
 
 moveNTopup([], _):- print("here"), !.
 moveNTopup(Path, Agent):-
@@ -71,51 +88,57 @@ test(Result) :-
     children(p(1, 1), Children),
     checkRepeated(Children, [([(p(1, 1), empty)],_,_)], Result).
  
+getNElements(0, List, Temp, Result):-
+  Temp = Result.
+getNElements(Start, List, Temp,Result):-
+  Next is Start-1,
+  List = [One|Many],
+  append(Temp, [One], New),
+  getNElements(Next, Many, New, Result).
 
-estrella(Target, [([(Target, Type)|Path], Fuel, Score)|Rest], BestPath):-
+
+
+
+estrella(Target, [([(Target, Type)|Path], Fuel, Score)|Rest], InitialScore, BestPath):-
   print(Rest),
   ([(Target, Type)|Path], Fuel, Score) = BestPath,!.
 
-estrella(Target, Agenda, BestPath) :-
-  Agenda = [Path|Paths],
+estrella(Target, Agenda, InitialScore,BestPath) :-
+  length(Agenda, Length),
+  (Length > 1000 -> getNElements(1000, Agenda, [], TheAgenda)
+  ; otherwise -> Agenda = TheAgenda),
+  TheAgenda = [Path|Paths],
   Path = ([(Current, _)|Rest], Fuel, Score),
-  % length(Rest, L),
-  % print("LENGTH: "), 
-  % print(L),
+  length(Rest, L),
+  print("LENGTH: "), 
+  writeln(L),
   children(Current, Children),
   checkRepeated(Children, Path, Result),
   processPath(Result, Path, Target, NewPath),
-  addChildren(Result, NewPath, Paths, NewAgenda),
-  estrella(Target, NewAgenda, BestPath).
+  addChildren(Result, NewPath, Paths, InitialScore, NewAgenda),
+  estrella(Target, NewAgenda, InitialScore, BestPath).
 
-addChildren([], _, Agenda, Result):-
+addChildren([], _, Agenda, InitialScore, Result):-
   Agenda = Result.
-addChildren(Children, CurrentPath, Agenda, Result) :-
+addChildren(Children, CurrentPath, Agenda, InitialScore, Result) :-
     Children=[(Node, Type)|Kids],
     CurrentPath=(Path, Fuel, Score),
+    New is InitialScore - Score,
     % print("SCORE:"),
-    % print(Score),
-    (Score <  40 -> 
+    % print(New),
+    (New = 0 -> 
       (   Type=empty
       ->  append([(Node, Type)], Path, NewPath),
           NewFuel is Fuel -1,
           append(Agenda,[(NewPath, NewFuel, Score)],NewAgenda),
-          addChildren(Kids, CurrentPath, NewAgenda, Result)
+          addChildren(Kids, CurrentPath, NewAgenda, InitialScore, Result)
       ;   otherwise
-      ->  addChildren(Kids, CurrentPath, Agenda, Result)
+      ->  addChildren(Kids, CurrentPath, Agenda, InitialScore, Result)
       )
       ; otherwise ->  Agenda = Result
       ).
 
-heuristic(Path, Target, Result) :-
-    Path=([First|Others], Fuel, _),
-    First = (Node, _),
-    map_distance(Node, Target, Distance),
-    ( Fuel=0 ->  H is Distance;
-      otherwise ->  H is Distance ),
-    length([First|Others], L),
-    G is L,
-    Result is G + H .
+
 
 processPath([], CurrentPath, Target, Result):-
   CurrentPath = (Path, Fuel, _),
