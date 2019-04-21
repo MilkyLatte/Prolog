@@ -56,7 +56,7 @@ heuristic(Path, Target, Result) :-
     (   Fuel=0
     ->  H is Distance
     ;   otherwise
-    ->  H is 10 * 1/Fuel + 0.9 * Distance
+    ->  H is 100 * 1/Fuel + Distance
     ),
     length([First|Others], L),
     G is L,
