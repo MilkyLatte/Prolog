@@ -45,13 +45,15 @@ solve_task(Task, Cost):-
   convertPath(TupledPath, [], [_Init|Path]),
   moveNTopup(Path, Agent).
 
-moveNTopup([]):- !.
+moveNTopup([], _):- print("here"), !.
 moveNTopup(Path, Agent):-
   Path = [Node|Rest], 
   query_world( agent_do_moves, [Agent,[Node]]),
   ( map_adjacent(Node, _, c(C)) -> 
-      print("topup"),
-      query_world(agent_top_energy, [Agent, c(C)]), 
+      print("LA LETRA C ES IGUAL A: "),
+      print(C),
+      query_world(agent_topup_energy, [Agent, c(C)]), 
+      print("WE TOPPED UP"),
       moveNTopup(Rest, Agent);
     otherwise -> 
       print("nothing"),
@@ -71,11 +73,15 @@ test(Result) :-
  
 
 estrella(Target, [([(Target, Type)|Path], Fuel, Score)|Rest], BestPath):-
+  print(Rest),
   ([(Target, Type)|Path], Fuel, Score) = BestPath,!.
 
 estrella(Target, Agenda, BestPath) :-
   Agenda = [Path|Paths],
   Path = ([(Current, _)|Rest], Fuel, Score),
+  % length(Rest, L),
+  % print("LENGTH: "), 
+  % print(L),
   children(Current, Children),
   checkRepeated(Children, Path, Result),
   processPath(Result, Path, Target, NewPath),
@@ -87,7 +93,9 @@ addChildren([], _, Agenda, Result):-
 addChildren(Children, CurrentPath, Agenda, Result) :-
     Children=[(Node, Type)|Kids],
     CurrentPath=(Path, Fuel, Score),
-    (Fuel > 5 -> 
+    % print("SCORE:"),
+    % print(Score),
+    (Score <  40 -> 
       (   Type=empty
       ->  append([(Node, Type)], Path, NewPath),
           NewFuel is Fuel -1,
@@ -96,18 +104,18 @@ addChildren(Children, CurrentPath, Agenda, Result) :-
       ;   otherwise
       ->  addChildren(Kids, CurrentPath, Agenda, Result)
       )
-      ; otherwise -> Agenda = [_|Many], Many = Result
+      ; otherwise ->  Agenda = Result
       ).
 
 heuristic(Path, Target, Result) :-
     Path=([First|Others], Fuel, _),
     First = (Node, _),
     map_distance(Node, Target, Distance),
-    ( Fuel=0 ->  H is 90+10*Distance;
-      otherwise ->  H is 90*1/Fuel+10*Distance),
+    ( Fuel=0 ->  H is Distance;
+      otherwise ->  H is Distance ),
     length([First|Others], L),
     G is L,
-    Result is G+H.
+    Result is G + H .
 
 processPath([], CurrentPath, Target, Result):-
   CurrentPath = (Path, Fuel, _),
