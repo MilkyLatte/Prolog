@@ -108,14 +108,15 @@ sampleNElements(Counter, List, Temp, Result):-
 
 
 estrella(Target, [([(Target, Type)|Path], Fuel, Score)|Rest], InitialScore, BestPath):-
-  (Fuel > 50 ->  ([(Target, Type)|Path], Fuel, Score) = BestPath,!),
-  estrella(Target, Rest, InitialScore, BestPath).
+  (Fuel > 20 ->  ([(Target, Type)|Path], Fuel, Score) = BestPath,!
+  ; otherwise ->  estrella(Target, Rest, InitialScore, BestPath)).
+
  
 
 estrella(Target, Agenda, InitialScore,BestPath) :-
   writeln("============"),
   length(Agenda, Length),
-  (Length > 1500 -> sampleNElements(1000, Agenda, [], TheAgenda)
+  (Length > 1000 -> sampleNElements(500, Agenda, [], TheAgenda)
   ; otherwise -> Agenda = TheAgenda),
   TheAgenda = [Path|Paths],
   Path = ([(Current, _)|Rest], Fuel, Score),
