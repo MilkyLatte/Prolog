@@ -50,8 +50,8 @@ solve_task(Task, Cost):-
 heuristic(Path, Target, Result) :-
     Path=([First|Others], Fuel, _),
     First=(Node, _),
-    print("HEAD AT:"),
-    writeln(Node),
+    % print("HEAD AT:"),
+    % writeln(Node),
     map_distance(Node, Target, Distance),
     (   Fuel = 0
     ->  H is Distance
@@ -69,13 +69,9 @@ moveNTopup(Path, Agent):-
   Path = [(Node, _)|Rest], 
   query_world( agent_do_moves, [Agent,[Node]]),
   ( map_adjacent(Node, _, c(C)) -> 
-      print("LA LETRA C ES IGUAL A: "),
-      print(C),
       query_world(agent_topup_energy, [Agent, c(C)]), 
-      print("WE TOPPED UP"),
       moveNTopup(Rest, Agent);
     otherwise -> 
-      print("nothing"),
       moveNTopup(Rest, Agent)).
 
 children([], []).
@@ -114,7 +110,7 @@ estrella(Target, [([(Target, Type)|Path], Fuel, Score)|Rest], InitialScore, Best
  
 
 estrella(Target, Agenda, InitialScore,BestPath) :-
-  writeln("============"),
+  % writeln("============"),
   length(Agenda, Length),
   (Length > 1000 -> sampleNElements(500, Agenda, [], TheAgenda)
   ; otherwise -> Agenda = TheAgenda),
@@ -132,8 +128,8 @@ addChildren(Children, CurrentPath, Agenda, InitialScore, Result) :-
     Children=[(Node, Type)|Kids],
     CurrentPath=(Path, Fuel, Score),
     New is Score - InitialScore,
-    print("SCORE:"),
-    writeln(New),
+    % print("SCORE:"),
+    % writeln(New),
     (New < 20 -> 
       (   Type=empty
       ->  append([(Node, Type)], Path, NewPath),

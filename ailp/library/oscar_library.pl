@@ -123,21 +123,21 @@ shell :-
 handle_input(Input) :-
   ( Input = help           -> forall(shell2query(S,Q,_R),(numbervars((S,Q)),writes([S,' -- ',Q])))
   ; Input = demo           -> randomMove(20, [], D),handle_input(D)
-  % ; Input = [H|T]          -> writes(['? ',H]),handle_input(H),write('<return> to continue'),get_single_char(_),nl,handle_input(T)
+  ; Input = [H|T]          -> writes(['? ',H]),handle_input(H),handle_input(T)
   ; Input = []             -> true
   ; shell2query(Input,G,R) -> ( show_response(query(G)),call(G) -> show_response(R) ; show_response('This failed.') )
   ; otherwise              -> show_response('Unknown command, please try again.')
   ).
+
 
 randomMove(0, Temp, Result):-
   Temp = Result.
 randomMove(N, Temp,Result):-
   random(0, 20, X),
   random(0, 20, Y),
-  append(Temp, [go(p(X, Y))], R),
+  append(Temp, [energy, position, go(p(X, Y))], R),
   New is N-1,
   randomMove(New, R, Result).
-
 shell_demo([reset,find(o(1)),ask(o(1),'What is the meaning of life, the universe and everything?'),go(p(7,7)),energy,position,go(p(19,9)),energy,position,call(map_adjacent(p(19,9),_P,_O)),topup(c(3)),energy,go(p(10,10)),energy]).
 
 % get input from user
