@@ -55,8 +55,10 @@ heuristic(Path, Target, Result) :-
     map_distance(Node, Target, Distance),
     (   Fuel = 0
     ->  H is Distance
+    % ;   Fuel < 30
+    % ->  H is e ** 1/(Fuel * 0.01) + Distance
     ;   otherwise
-    ->  H is 100 * 1/Fuel + Distance
+    ->  H is e ** (1/(Fuel * 0.2)) + Distance
     ),
     length([First|Others], L),
     G is L,
@@ -129,7 +131,7 @@ addChildren(Children, CurrentPath, Agenda, InitialScore, Result) :-
     New is Score - InitialScore,
     print("SCORE:"),
     writeln(New),
-    (New < 20 -> 
+    (New < 50 -> 
       (   Type=empty
       ->  append([(Node, Type)], Path, NewPath),
           NewFuel is Fuel -1,
