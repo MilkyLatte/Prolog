@@ -55,10 +55,10 @@ heuristic(Path, Target, Result) :-
     map_distance(Node, Target, Distance),
     (   Fuel = 0
     ->  H is Distance
-    % ;   Fuel < 30
-    % ->  H is e ** 1/(Fuel * 0.01) + Distance
-    ;   otherwise
+    ;   Fuel > 20
     ->  H is e ** (1/(Fuel * 0.2)) + Distance
+    ;   otherwise
+    ->  H is e ** (1/(Fuel * 0.01)) + Distance
     ),
     length([First|Others], L),
     G is L,
