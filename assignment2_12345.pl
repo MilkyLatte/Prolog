@@ -53,7 +53,7 @@ heuristic(Path, Target, Result) :-
     print("HEAD AT:"),
     writeln(Node),
     map_distance(Node, Target, Distance),
-    (   Fuel=0
+    (   Fuel = 0
     ->  H is Distance
     ;   otherwise
     ->  H is 100 * 1/Fuel + Distance
@@ -64,7 +64,7 @@ heuristic(Path, Target, Result) :-
 
 moveNTopup([], _):- print("here"), !.
 moveNTopup(Path, Agent):-
-  Path = [Node|Rest], 
+  Path = [(Node, _)|Rest], 
   query_world( agent_do_moves, [Agent,[Node]]),
   ( map_adjacent(Node, _, c(C)) -> 
       print("LA LETRA C ES IGUAL A: "),
@@ -84,9 +84,6 @@ checkRepeated(Children, Current, NonRepeated) :-
     Current = (Path, _, _),
     exclude([P]>>memberchk(P, Path), Children, NonRepeated).
 
-test(Result) :-
-    children(p(1, 1), Children),
-    checkRepeated(Children, [([(p(1, 1), empty)],_,_)], Result).
  
 getNElements(0, List, Temp, Result):-
   Temp = Result.
@@ -145,6 +142,7 @@ addChildren(Children, CurrentPath, Agenda, InitialScore, Result) :-
       ).
 
 
+
 processPath([], CurrentPath, Target, Result):-
   CurrentPath = (Path, Fuel, _),
   heuristic(CurrentPath, Target, NewScore),
@@ -162,6 +160,14 @@ processPath(Children, CurrentPath, Target, Result):-
 %   bfs(go(Target), [[Target|Path]|_], Result) :-
 %     print("reach"),
 %     reverse(Result, [Target|Path]).
+
+convertPath([], [], []).
+convertPath([], Path, Result):- 
+  Path = Result,!.
+convertPath(TupledPath, Path, Result):-
+  TupledPath = [(Pos, _)|Rest],
+  append([Pos], Path, NewPath),
+  convertPath(Rest, NewPath, Result).
 
 
 % bfs(Task, Queue, Result) :-
