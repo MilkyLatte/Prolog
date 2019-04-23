@@ -136,7 +136,7 @@ addChildren(Children, CurrentPath, Agenda, InitialScore, Result) :-
     New is Score - InitialScore,
     % print("SCORE:"),
     % writeln(New),
-    (New < 20 -> 
+    (New < 25 -> 
       (   Type=empty
       ->  append([(Node, Type)], Path, NewPath),
           NewFuel is Fuel -1,
