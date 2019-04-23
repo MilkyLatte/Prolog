@@ -122,10 +122,10 @@ shell :-
 
 handle_input(Input) :-
   ( Input = help           -> forall(shell2query(S,Q,_R),(numbervars((S,Q)),writes([S,' -- ',Q])))
-  ; Input = demo           -> randomMove(20, [], D),handle_input(D)
-  ; Input = [H|T]          -> writes(['? ',H]),handle_input(H),handle_input(T)
+  ; Input = demo           -> randomMove(50, [], D),handle_input(D)
+  ; Input = [H|T]          -> writeln(H), writes(['? ',H]),handle_input(H),handle_input(T)
   ; Input = []             -> true
-  ; shell2query(Input,G,R) -> ( show_response(query(G)),call(G) -> show_response(R) ; show_response('This failed.') )
+  ; shell2query(Input,G,R) -> ( show_response(query(G)),call(G) -> show_response(R) ; writeln("======================"), show_response('This failed.'), writeln("=============================") )
   ; otherwise              -> show_response('Unknown command, please try again.')
   ).
 
@@ -133,8 +133,8 @@ handle_input(Input) :-
 randomMove(0, Temp, Result):-
   Temp = Result.
 randomMove(N, Temp,Result):-
-  random(0, 20, X),
-  random(0, 20, Y),
+  random(1, 21, X),
+  random(1, 21, Y),
   append(Temp, [energy, position, go(p(X, Y))], R),
   New is N-1,
   randomMove(New, R, Result).
