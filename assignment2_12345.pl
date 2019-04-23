@@ -37,15 +37,21 @@ search(F,N,O) :-
 % temp moving
 solve_task(Task, Cost):-
   Task = go(Target),
-  my_agent(Agent),
-  query_world(agent_current_position, [Agent,P]),
-  query_world(agent_current_energy, [Agent, E]), 
-  ([(P, empty)], E, Cost) = Initial,
-  heuristic(Initial, Target, Result),
-  estrella(Target, [Initial],Result, Best), 
-  Best = (TupledPath, _, _),
-  reverse(TupledPath, [_Init|Path]),
-  moveNTopup(Path, Agent).
+  query_world(check_pos, [Target, Type]),
+  map_adjacent(Target, _, T),
+  (Type = empty ->
+    (T = empty ->
+      my_agent(Agent),
+      query_world(agent_current_position, [Agent,P]),
+      query_world(agent_current_energy, [Agent, E]), 
+      ([(P, empty)], E, Cost) = Initial,
+      heuristic(Initial, Target, Result),
+      estrella(Target, [Initial],Result, Best), 
+      Best = (TupledPath, _, _),
+      reverse(TupledPath, [_Init|Path]),
+      moveNTopup(Path, Agent)
+    )
+  ).
 
 heuristic(Path, Target, Result) :-
     Path=([First|Others], Fuel, _),
