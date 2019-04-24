@@ -47,28 +47,18 @@ solve_task(Task, Cost) :-
         ([(P, empty)], E, Cost)=Initial,
         heuristic(Initial, Target, Result),
         estrella(Target, [Initial], Result, Best, Flag),
-        writeln("ESTRELLA WORKS"),
-        writeln(Flag),
         (   Flag=1
-        ->  writeln("HERE0"),
-            writeln(Best),
+        ->  
             Best=([(Node, _)|Many], Energy, Score),
-            writeln("HERE"),
-            ([(Node, empty)], E, Score)=Temp,
-            writeln("HERE1"),
+            ([(Node, empty)], 100, Score)=Temp,
             heuristic(Temp, Target, R),
-            writeln("HERE2"),
             estrella(Target, [Temp], R, Continuation, _),
-            writeln("HERE3"),
             Continuation=(Road, _, _),
-            writeln("HERE4"),
             append(Road, Many, Final),
-            writeln("HERe5"),
             reverse(Final, [_Init|Path]),
-            writeln("HERE6"),
             moveNTopup(Path, Agent)
         ;   otherwise
-        ->  print("HERE"),
+        ->  
             Best=(TupledPath, _, _),
             reverse(TupledPath, [_Init|Path]),
             moveNTopup(Path, Agent)
