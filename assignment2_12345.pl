@@ -55,8 +55,6 @@ solve_task(Task, Cost) :-
             estrella(Target, [Temp], R, Continuation, _),
             Continuation=(Road, _, _),
             append(Road, Many, Final),
-            Final = [(A,_)|_],
-            (A \= Target -> writeln("========ERROR========")),
             reverse(Final, [_Init|Path]),
             moveNTopup(Path, Agent)
         ;   otherwise
@@ -134,9 +132,7 @@ estrella(Target, [([(Target, Type)|Path], Fuel, Score)|Rest], InitialScore, Best
 estrella(Target, Agenda, InitialScore,BestPath, Flag) :-
   % writeln("============"),
   length(Agenda, Length),
-  (Length > 1000 -> sort(2, @=<, Agenda, Sorted),
-    getNElements(500, Sorted, Temp, TheAgenda)
-    % sampleNElements(500, Agenda, [], TheAgenda)
+  (Length > 1000 -> sampleNElements(500, Agenda, [], TheAgenda)
   ; otherwise -> Agenda = TheAgenda),
   TheAgenda = [Path|Paths],
   Path = ([(Current, _)|Rest], Fuel, Score),
@@ -176,25 +172,13 @@ processPath([], CurrentPath, Target, Result, Temp, Flag):-
   (Path, Fuel, NewScore) = Result,
   Temp = Flag.
 
-processPath(Children, CurrentPath, Target, Result, Temp, Flag) :-
-    Children=[(_, Type)|Kids],
-    CurrentPath=(Path, Fuel, Score),
-    (   Type=c(_)
-    ->  NewFuel is 100,
-        (Path, NewFuel, Score)=NewPath,
-        (   Fuel<50
-        ->  processPath(Kids, NewPath, Target, Result, 1, Flag)
-        ;   otherwise
-        ->  processPath(Kids, NewPath, Target, Result, 0, Flag)
-        )
-    ;   otherwise
-    ->  processPath(Kids,
-                    CurrentPath,
-                    Target,
-                    Result,
-                    Temp,
-                    Flag)
-    ).
+processPath(Children, CurrentPath, Target, Result, Temp, Flag):-
+  Children = [(_, Type)|Kids],
+  CurrentPath = (Path, Fuel, Score),
+  (Type = c(_), Fuel < 50 -> NewFuel is 100,
+  (Path, NewFuel, Score) = NewPath,
+  processPath(Kids, NewPath, Target, Result, 1, Flag )
+  ; otherwise -> processPath(Kids, CurrentPath, Target, Result, Temp,Flag)).
 
 
 %   bfs(go(Target), [[Target|Path]|_], Result) :-
