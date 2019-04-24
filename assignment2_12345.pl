@@ -125,7 +125,7 @@ sampleNElements(Counter, List, Temp, Result):-
 
 estrella(Target, [([(Target, Type)|Path], Fuel, Score)|Rest], InitialScore, BestPath, Flag):-
   (Fuel > 20 ->  ([(Target, Type)|Path], Fuel, Score) = BestPath, 0 = Flag,!
-  ; otherwise ->  estrella(Target, Rest, InitialScore, BestPath)).
+  ; otherwise ->  estrella(Target, Rest, InitialScore, BestPath, Flag)).
 
  
 
