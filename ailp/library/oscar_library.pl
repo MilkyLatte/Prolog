@@ -122,7 +122,7 @@ shell :-
 
 handle_input(Input) :-
   ( Input = help           -> forall(shell2query(S,Q,_R),(numbervars((S,Q)),writes([S,' -- ',Q])))
-  ; Input = demo           -> randomMove(50, [], D),handle_input(D)
+  ; Input = demo           -> randomMove(1000, [], D),handle_input(D)
   ; Input = [H|T]          -> writeln(H), writes(['? ',H]),handle_input(H),handle_input(T)
   ; Input = []             -> true
   ; shell2query(Input,G,R) -> ( show_response(query(G)),call(G) -> show_response(R) ; writeln("======================"), show_response('This failed.'), writeln("=============================") )

@@ -35,23 +35,47 @@ search(F,N,O) :-
 
 % -----------------------------------
 % temp moving
-solve_task(Task, Cost):-
-  Task = go(Target),
-  query_world(check_pos, [Target, Type]),
-  map_adjacent(Target, _, T),
-  (Type = empty ->
-    (T = empty ->
-      my_agent(Agent),
-      query_world(agent_current_position, [Agent,P]),
-      query_world(agent_current_energy, [Agent, E]), 
-      ([(P, empty)], E, Cost) = Initial,
-      heuristic(Initial, Target, Result),
-      estrella(Target, [Initial],Result, Best), 
-      Best = (TupledPath, _, _),
-      reverse(TupledPath, [_Init|Path]),
-      moveNTopup(Path, Agent)
-    )
-  ).
+solve_task(Task, Cost) :-
+    Task=go(Target),
+    query_world(check_pos, [Target, Type]),
+    map_adjacent(Target, _, T),
+    (   Type=empty
+    ->  T=empty
+    ->  my_agent(Agent),
+        query_world(agent_current_position, [Agent, P]),
+        query_world(agent_current_energy, [Agent, E]),
+        ([(P, empty)], E, Cost)=Initial,
+        heuristic(Initial, Target, Result),
+        estrella(Target, [Initial], Result, Best, Flag),
+        writeln("ESTRELLA WORKS"),
+        writeln(Flag),
+        (   Flag=1
+        ->  writeln("HERE0"),
+            writeln(Best),
+            Best=([(Node, _)|Many], Energy, Score),
+            writeln("HERE"),
+            ([(Node, empty)], E, Score)=Temp,
+            writeln("HERE1"),
+            heuristic(Temp, Target, R),
+            writeln("HERE2"),
+            estrella(Target, [Temp], R, Continuation, _),
+            writeln("HERE3"),
+            Continuation=(Road, _, _),
+            writeln("HERE4"),
+            append(Road, Many, Final),
+            writeln("HERe5"),
+            reverse(Final, [_Init|Path]),
+            writeln("HERE6"),
+            moveNTopup(Path, Agent)
+        ;   otherwise
+        ->  print("HERE"),
+            Best=(TupledPath, _, _),
+            reverse(TupledPath, [_Init|Path]),
+            moveNTopup(Path, Agent)
+        )
+    ).
+
+
 
 heuristic(Path, Target, Result) :-
     Path=([First|Others], Fuel, _),
@@ -64,7 +88,7 @@ heuristic(Path, Target, Result) :-
     % ;   Fuel < 30
     % ->  H is e ** 1/(Fuel * 0.01) + Distance
     ;   otherwise
-    ->  H is 100 * (1/(Fuel)) + Distance
+    ->  H is 50 * (1/(Fuel)) + Distance
     ),
     length([First|Others], L),
     G is L,
@@ -109,13 +133,13 @@ sampleNElements(Counter, List, Temp, Result):-
   sampleNElements(NewCounter, NewList, NewTemp, Result).
 
 
-estrella(Target, [([(Target, Type)|Path], Fuel, Score)|Rest], InitialScore, BestPath):-
-  (Fuel > 25 ->  ([(Target, Type)|Path], Fuel, Score) = BestPath,!
+estrella(Target, [([(Target, Type)|Path], Fuel, Score)|Rest], InitialScore, BestPath, Flag):-
+  (Fuel > 20 ->  ([(Target, Type)|Path], Fuel, Score) = BestPath, 0 = Flag,!
   ; otherwise ->  estrella(Target, Rest, InitialScore, BestPath)).
 
  
 
-estrella(Target, Agenda, InitialScore,BestPath) :-
+estrella(Target, Agenda, InitialScore,BestPath, Flag) :-
   % writeln("============"),
   length(Agenda, Length),
   (Length > 1000 -> sampleNElements(500, Agenda, [], TheAgenda)
@@ -124,9 +148,11 @@ estrella(Target, Agenda, InitialScore,BestPath) :-
   Path = ([(Current, _)|Rest], Fuel, Score),
   children(Current, Children),
   checkRepeated(Children, Path, Result),
-  processPath(Result, Path, Target, NewPath),
-  addChildren(Result, NewPath, Paths, InitialScore, NewAgenda),
-  estrella(Target, NewAgenda, InitialScore, BestPath).
+  processPath(Result, Path, Target, NewPath, 0, F),
+  (F = 1 -> writeln("INSIDE"), NewPath = BestPath,  1 = Flag, !
+    ; otherwise -> 
+      addChildren(Result, NewPath, Paths, InitialScore, NewAgenda),
+      estrella(Target, NewAgenda, InitialScore, BestPath, Flag)).
 
 addChildren([], _, Agenda, InitialScore, Result):-
   Agenda = Result.
@@ -136,7 +162,7 @@ addChildren(Children, CurrentPath, Agenda, InitialScore, Result) :-
     New is Score - InitialScore,
     % print("SCORE:"),
     % writeln(New),
-    (New < 30 -> 
+    (New < 20 -> 
       (   Type=empty
       ->  append([(Node, Type)], Path, NewPath),
           NewFuel is Fuel -1,
@@ -150,18 +176,19 @@ addChildren(Children, CurrentPath, Agenda, InitialScore, Result) :-
 
 
 
-processPath([], CurrentPath, Target, Result):-
+processPath([], CurrentPath, Target, Result, Temp, Flag):-
   CurrentPath = (Path, Fuel, _),
   heuristic(CurrentPath, Target, NewScore),
-  (Path, Fuel, NewScore) = Result.
+  (Path, Fuel, NewScore) = Result,
+  Temp = Flag.
 
-processPath(Children, CurrentPath, Target, Result):-
+processPath(Children, CurrentPath, Target, Result, Temp, Flag):-
   Children = [(_, Type)|Kids],
-  CurrentPath = (Path, _, Score),
-  (Type = c(_) -> NewFuel is 100,
+  CurrentPath = (Path, Fuel, Score),
+  (Type = c(_), Fuel < 50 -> NewFuel is 100,
   (Path, NewFuel, Score) = NewPath,
-  processPath(Kids, NewPath, Target, Result)
-  ; otherwise -> processPath(Kids, CurrentPath, Target, Result)).
+  processPath(Kids, NewPath, Target, Result, 1, Flag )
+  ; otherwise -> processPath(Kids, CurrentPath, Target, Result, Temp,Flag)).
 
 
 %   bfs(go(Target), [[Target|Path]|_], Result) :-

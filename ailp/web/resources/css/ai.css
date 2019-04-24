@@ -20,6 +20,7 @@ body {
 	font-size: 8pt;
 	margin: 8px;
 	padding: 8px;
+	overflow: scroll;
 }
 
 input[type=text]:disabled {
