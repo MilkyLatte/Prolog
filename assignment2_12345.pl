@@ -55,6 +55,8 @@ solve_task(Task, Cost) :-
             estrella(Target, [Temp], R, Continuation, _),
             Continuation=(Road, _, _),
             append(Road, Many, Final),
+            Final = [(A,_)|_],
+            (A \= Target -> writeln("========ERROR========")),
             reverse(Final, [_Init|Path]),
             moveNTopup(Path, Agent)
         ;   otherwise
@@ -172,13 +174,25 @@ processPath([], CurrentPath, Target, Result, Temp, Flag):-
   (Path, Fuel, NewScore) = Result,
   Temp = Flag.
 
-processPath(Children, CurrentPath, Target, Result, Temp, Flag):-
-  Children = [(_, Type)|Kids],
-  CurrentPath = (Path, Fuel, Score),
-  (Type = c(_), Fuel < 50 -> NewFuel is 100,
-  (Path, NewFuel, Score) = NewPath,
-  processPath(Kids, NewPath, Target, Result, 1, Flag )
-  ; otherwise -> processPath(Kids, CurrentPath, Target, Result, Temp,Flag)).
+processPath(Children, CurrentPath, Target, Result, Temp, Flag) :-
+    Children=[(_, Type)|Kids],
+    CurrentPath=(Path, Fuel, Score),
+    (   Type=c(_)
+    ->  NewFuel is 100,
+        (Path, NewFuel, Score)=NewPath,
+        (   Fuel<50
+        ->  processPath(Kids, NewPath, Target, Result, 1, Flag)
+        ;   otherwise
+        ->  processPath(Kids, NewPath, Target, Result, 0, Flag)
+        )
+    ;   otherwise
+    ->  processPath(Kids,
+                    CurrentPath,
+                    Target,
+                    Result,
+                    Temp,
+                    Flag)
+    ).
 
 
 %   bfs(go(Target), [[Target|Path]|_], Result) :-
