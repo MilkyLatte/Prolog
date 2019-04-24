@@ -63,18 +63,18 @@ last(X,[_|Z]) :- last(X,Z).
 find_actor_o(Actors, A, Visited) :-
   my_agent(Agent),
   query_world(agent_current_energy, [Agent, E]),
-  % ( E < 40
-  % -> writeln("Low fuel"),
-  %    find_station(Agent, Station),
-  %    [FP|Rest] = Station,
-  %    map_adjacent(FP, _, c(C)),
-  %    reverse(Rev, Station),
-  %    [First|Path] = Rev,
-  %    query_world(agent_do_moves, [Agent, Path]),
-  %    query_world(agent_topup_energy, [Agent, c(C)]);
-  %   otherwise
-  % -> true), 
-  % !,
+  ( E < 36
+  -> writeln("Low fuel"),
+     find_station(Agent, Station),
+     [FP|Rest] = Station,
+     map_adjacent(FP, _, c(C)),
+     reverse(Rev, Station),
+     [First|Path] = Rev,
+     query_world(agent_do_moves, [Agent, Path]),
+     query_world(agent_topup_energy, [Agent, c(C)]);
+    otherwise
+  -> true), 
+  !,
   find_oracle(Agent, Visited, P, ID, NewVisited), !,
   writeln(P),
   % writeln(ID),
@@ -167,7 +167,7 @@ checkRepeated_bfs([], _,NonRepeated):- [] = NonRepeated.
 checkRepeated_bfs(Children, Queue, NonRepeated):-
   Queue = [Path|Rest],
   exclude([P]>>memberchk(P, Path), Children, Result),
-  (Result = [] -> fail; otherwise -> true),
+  (Result = [] -> !, fail; otherwise -> true),
   checkRepeated_bfs(Result, Rest, NonRepeated).
 
 
