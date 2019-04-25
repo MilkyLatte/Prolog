@@ -135,7 +135,7 @@ randomMove(0, Temp, Result):-
 randomMove(N, Temp,Result):-
   random(1, 21, X),
   random(1, 21, Y),
-  append(Temp, [reset, identity], R),
+  append(Temp, [identity, reset], R),
   New is N-1,
   randomMove(New, R, Result).
 shell_demo([reset,find(o(1)),ask(o(1),'What is the meaning of life, the universe and everything?'),go(p(7,7)),energy,position,go(p(19,9)),energy,position,call(map_adjacent(p(19,9),_P,_O)),topup(c(3)),energy,go(p(10,10)),energy]).
