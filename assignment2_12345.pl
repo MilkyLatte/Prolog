@@ -78,15 +78,6 @@ moveNTopup(Path, Agent):-
     otherwise -> 
       moveNTopup(Rest, Agent)).
 
-%children get both the node and its node type
-children([], []).
-children(Node, Children):-
-  setof((A, B) , search(Node, A, B), Children).
-
-checkRepeated(Children, Current, NonRepeated) :-
-    Current = (Path, _, _),
-    exclude([P]>>memberchk(P, Path), Children, NonRepeated).
-
 %random taking a number of path from existing tree
 sampleNElements(0, _, Temp, Result):-
   Temp = Result, !.
@@ -113,7 +104,8 @@ estrella(Target, Agenda, InitialScore, BestPath, Flag) :-
   TheAgenda = [Path|Paths],
   Path = ([(Current, _)|Rest], Fuel, Score),
   children(Current, Children),
-  checkRepeated(Children, Path, Result),
+  Current = (Path, _, _),
+  exclude([P]>>memberchk(P, Path), Children, Result),
   processPath(Result, Path, Target, NewPath, 0, F),
   %return the path back to solve_task, so we can find a continued path towards the target
   (F = 1 -> writeln("INSIDE"), NewPath = BestPath,  1 = Flag, !
@@ -121,6 +113,10 @@ estrella(Target, Agenda, InitialScore, BestPath, Flag) :-
       addChildren(Result, NewPath, Paths, InitialScore, NewAgenda),
       estrella(Target, NewAgenda, InitialScore, BestPath, Flag)).
 
+%children get both the node and its node type
+children([], []).
+children(Node, Children):-
+  setof((A, B) , search(Node, A, B), Children).
 
 addChildren([], _, Agenda, InitialScore, Result):-
   Agenda = Result.
@@ -159,6 +155,9 @@ processPath(Children, CurrentPath, Target, Result, Temp, Flag):-
   processPath(Kids, NewPath, Target, Result, 1, Flag )
   ; otherwise -> processPath(Kids, CurrentPath, Target, Result, Temp, Flag)).
 
+checkRepeated(Children, Current, NonRepeated) :-
+    Current = (Path, _, _),
+    exclude([P]>>memberchk(P, Path), Children, NonRepeated).
 
 getNElements(0, List, Temp, Result):-
   Temp = Result.
