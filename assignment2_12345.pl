@@ -30,30 +30,29 @@ solve_task(Task, Cost) :-
     Task=go(Target),
     query_world(check_pos, [Target, Type]),
     map_adjacent(Target, _, T),
-    (   Type=empty -> T=empty
-    ->  my_agent(Agent),
-        query_world(agent_current_position, [Agent, P]),
-        query_world(agent_current_energy, [Agent, E]),
-        ([(P, empty)], E, Cost) = Initial,
-        heuristic(Initial, Target, Result), % find the initial heuristic from P to Target
-        estrella(Target, [Initial], Result, Best, Flag),
-        (   Flag=1
-        ->  %with charging
-            Best=([(Node, _)|Many], Energy, Score),
-            ([(Node, empty)], 100, Score) = Temp, %energy recharged
-            heuristic(Temp, Target, R), %find the heuristic from the charging station
-            estrella(Target, [Temp], R, Continuation, _), %Continuation is the new Tupledpath
-            Continuation = (Road, _, _),
-            append(Road, Many, Final), % appending the new path to the previous path
-            reverse(Final, [_Init|Path]),
-            moveNTopup(Path, Agent, Target, Score)
-        ;   otherwise
-        ->  %without charging, the TupledPath is the path
-            Best=(TupledPath, _, Score), 
-            reverse(TupledPath, [_Init|Path]),
-            moveNTopup(Path, Agent, Target, Score)
-        )
+    my_agent(Agent),
+    query_world(agent_current_position, [Agent, P]),
+    query_world(agent_current_energy, [Agent, E]),
+    ([(P, empty)], E, Cost) = Initial,
+    heuristic(Initial, Target, Result), % find the initial heuristic from P to Target
+    estrella(Target, [Initial], Result, Best, Flag),
+    (   Flag=1
+    ->  %with charging
+        Best=([(Node, _)|Many], Energy, Score),
+        ([(Node, empty)], 100, Score) = Temp, %energy recharged
+        heuristic(Temp, Target, R), %find the heuristic from the charging station
+        estrella(Target, [Temp], R, Continuation, _), %Continuation is the new Tupledpath
+        Continuation = (Road, _, _),
+        append(Road, Many, Final), % appending the new path to the previous path
+        reverse(Final, [_Init|Path]),
+        moveNTopup(Path, Agent, Target, Score)
+    ;   otherwise
+    ->  %without charging, the TupledPath is the path
+        Best=(TupledPath, _, Score), 
+        reverse(TupledPath, [_Init|Path]),
+        moveNTopup(Path, Agent, Target, Score)
     ).
+
 
 moveNTopup([], _, _, _):- !, print("here").
 moveNTopup(Path, Agent, Target, Score):-
