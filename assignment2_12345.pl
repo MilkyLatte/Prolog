@@ -159,7 +159,6 @@ processPath(Children, CurrentPath, Target, Result, Temp, Flag):-
   processPath(Kids, NewPath, Target, Result, 1, Flag )
   ; otherwise -> processPath(Kids, CurrentPath, Target, Result, Temp, Flag)).
 
-
 getNElements(0, List, Temp, Result):-
   Temp = Result.
 getNElements(Start, List, Temp,Result):-
