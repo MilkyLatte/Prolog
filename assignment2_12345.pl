@@ -26,50 +26,41 @@ candidate_number(39473).
 search(F,N,O) :-
   map_adjacent(F,N,O).
 
-% -----------------------------------
-% temp moving
 solve_task(Task, Cost) :-
     Task=go(Target),
     query_world(check_pos, [Target, Type]),
     map_adjacent(Target, _, T),
-    (   Type=empty
-    ->  T=empty
+    (   Type=empty -> T=empty
     ->  my_agent(Agent),
         query_world(agent_current_position, [Agent, P]),
         query_world(agent_current_energy, [Agent, E]),
-        ([(P, empty)], E, Cost)=Initial,
-        heuristic(Initial, Target, Result),
+        ([(P, empty)], E, Cost) = Initial,
+        heuristic(Initial, Target, Result), % find the initial heuristic from P to Target
         estrella(Target, [Initial], Result, Best, Flag),
         (   Flag=1
-        ->  
+        ->  %with charging
             Best=([(Node, _)|Many], Energy, Score),
-            ([(Node, empty)], 100, Score)=Temp,
-            heuristic(Temp, Target, R),
-            estrella(Target, [Temp], R, Continuation, _),
-            Continuation=(Road, _, _),
-            append(Road, Many, Final),
+            ([(Node, empty)], 100, Score) = Temp, %energy recharged
+            heuristic(Temp, Target, R), %find the heuristic from the charging station
+            estrella(Target, [Temp], R, Continuation, _), %Continuation is the new Tupledpath
+            Continuation = (Road, _, _),
+            append(Road, Many, Final), % appending the new path to the previous path
             reverse(Final, [_Init|Path]),
             moveNTopup(Path, Agent)
         ;   otherwise
-        ->  
-            Best=(TupledPath, _, _),
+        ->  %without charging, the TupledPath is the path
+            Best=(TupledPath, _, _), 
             reverse(TupledPath, [_Init|Path]),
             moveNTopup(Path, Agent)
         )
     ).
 
-
-
 heuristic(Path, Target, Result) :-
     Path=([First|Others], Fuel, _),
     First=(Node, _),
-    % print("HEAD AT:"),
-    % writeln(Node),
     map_distance(Node, Target, Distance),
-    (   Fuel = 0
+    (   Fuel = 0 %to prevent divide by zero
     ->  H is Distance
-    % ;   Fuel < 30
-    % ->  H is e ** 1/(Fuel * 0.01) + Distance
     ;   otherwise
     ->  H is 50 * (1/(Fuel)) + Distance
     ),
@@ -87,6 +78,7 @@ moveNTopup(Path, Agent):-
     otherwise -> 
       moveNTopup(Rest, Agent)).
 
+%children get both the node and its node type
 children([], []).
 children(Node, Children):-
   setof((A, B) , search(Node, A, B), Children).
@@ -95,15 +87,7 @@ checkRepeated(Children, Current, NonRepeated) :-
     Current = (Path, _, _),
     exclude([P]>>memberchk(P, Path), Children, NonRepeated).
 
- 
-getNElements(0, List, Temp, Result):-
-  Temp = Result.
-getNElements(Start, List, Temp,Result):-
-  Next is Start-1,
-  List = [One|Many],
-  append(Temp, [One], New),
-  getNElements(Next, Many, New, Result).
-
+%random taking a number of path from existing tree
 sampleNElements(0, _, Temp, Result):-
   Temp = Result, !.
 sampleNElements(Counter, List, Temp, Result):-
@@ -117,13 +101,12 @@ sampleNElements(Counter, List, Temp, Result):-
 
 
 estrella(Target, [([(Target, Type)|Path], Fuel, Score)|Rest], InitialScore, BestPath, Flag):-
+  %if the path still gives agent a fuel above 20, then it is the final path,
   (Fuel > 20 ->  ([(Target, Type)|Path], Fuel, Score) = BestPath, 0 = Flag,!
+  % else get rid of the path and keep searching using the Rest branch of the tree
   ; otherwise ->  estrella(Target, Rest, InitialScore, BestPath, Flag)).
 
- 
-
-estrella(Target, Agenda, InitialScore,BestPath, Flag) :-
-  % writeln("============"),
+estrella(Target, Agenda, InitialScore, BestPath, Flag) :-
   length(Agenda, Length),
   (Length > 1000 -> sampleNElements(500, Agenda, [], TheAgenda)
   ; otherwise -> Agenda = TheAgenda),
@@ -132,19 +115,21 @@ estrella(Target, Agenda, InitialScore,BestPath, Flag) :-
   children(Current, Children),
   checkRepeated(Children, Path, Result),
   processPath(Result, Path, Target, NewPath, 0, F),
+  %return the path back to solve_task, so we can find a continued path towards the target
   (F = 1 -> writeln("INSIDE"), NewPath = BestPath,  1 = Flag, !
     ; otherwise -> 
       addChildren(Result, NewPath, Paths, InitialScore, NewAgenda),
       estrella(Target, NewAgenda, InitialScore, BestPath, Flag)).
 
+
 addChildren([], _, Agenda, InitialScore, Result):-
   Agenda = Result.
+
+%only adding the empty child to the path when the child doesn't give a score that is too big from initialScore
 addChildren(Children, CurrentPath, Agenda, InitialScore, Result) :-
     Children=[(Node, Type)|Kids],
     CurrentPath=(Path, Fuel, Score),
     New is Score - InitialScore,
-    % print("SCORE:"),
-    % writeln(New),
     (New < 20 -> 
       (   Type=empty
       ->  append([(Node, Type)], Path, NewPath),
@@ -157,26 +142,28 @@ addChildren(Children, CurrentPath, Agenda, InitialScore, Result) :-
       ; otherwise ->  Agenda = Result
       ).
 
-
-
+%set the flag to 1 when we charge
 processPath([], CurrentPath, Target, Result, Temp, Flag):-
   CurrentPath = (Path, Fuel, _),
   heuristic(CurrentPath, Target, NewScore),
   (Path, Fuel, NewScore) = Result,
   Temp = Flag.
 
+%the function is dealing with charging only
+%if the the child has type c and agent has less than fuel -> we charge; 
 processPath(Children, CurrentPath, Target, Result, Temp, Flag):-
   Children = [(_, Type)|Kids],
   CurrentPath = (Path, Fuel, Score),
   (Type = c(_), Fuel < 50 -> NewFuel is 100,
   (Path, NewFuel, Score) = NewPath,
   processPath(Kids, NewPath, Target, Result, 1, Flag )
-  ; otherwise -> processPath(Kids, CurrentPath, Target, Result, Temp,Flag)).
+  ; otherwise -> processPath(Kids, CurrentPath, Target, Result, Temp, Flag)).
 
-convertPath([], [], []).
-convertPath([], Path, Result):- 
-  Path = Result,!.
-convertPath(TupledPath, Path, Result):-
-  TupledPath = [(Pos, _)|Rest],
-  append([Pos], Path, NewPath),
-  convertPath(Rest, NewPath, Result).
+
+getNElements(0, List, Temp, Result):-
+  Temp = Result.
+getNElements(Start, List, Temp,Result):-
+  Next is Start-1,
+  List = [One|Many],
+  append(Temp, [One], New),
+  getNElements(Next, Many, New, Result).
