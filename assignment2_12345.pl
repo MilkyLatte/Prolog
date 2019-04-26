@@ -30,50 +30,31 @@ solve_task(Task, Cost) :-
     Task=go(Target),
     query_world(check_pos, [Target, Type]),
     map_adjacent(Target, _, T),
-    my_agent(Agent),
-    query_world(agent_current_position, [Agent, P]),
-    query_world(agent_current_energy, [Agent, E]),
-    ([(P, empty)], E, Cost) = Initial,
-    heuristic(Initial, Target, Result), % find the initial heuristic from P to Target
-    estrella(Target, [Initial], Result, Best, Flag),
-    (   Flag=1
-    ->  %with charging
-        Best=([(Node, _)|Many], Energy, Score),
-        ([(Node, empty)], 100, Score) = Temp, %energy recharged
-        heuristic(Temp, Target, R), %find the heuristic from the charging station
-        estrella(Target, [Temp], R, Continuation, _), %Continuation is the new Tupledpath
-        Continuation = (Road, _, _),
-        append(Road, Many, Final), % appending the new path to the previous path
-        reverse(Final, [_Init|Path]),
-        moveNTopup(Path, Agent, Target, Score)
-    ;   otherwise
-    ->  %without charging, the TupledPath is the path
-        Best=(TupledPath, _, Score), 
-        reverse(TupledPath, [_Init|Path]),
-        moveNTopup(Path, Agent, Target, Score)
+    (   Type=empty -> T=empty
+    ->  my_agent(Agent),
+        query_world(agent_current_position, [Agent, P]),
+        query_world(agent_current_energy, [Agent, E]),
+        ([(P, empty)], E, Cost) = Initial,
+        heuristic(Initial, Target, Result), % find the initial heuristic from P to Target
+        estrella(Target, [Initial], Result, Best, Flag),
+        (   Flag=1
+        ->  %with charging
+            Best=([(Node, _)|Many], Energy, Score),
+            ([(Node, empty)], 100, Score) = Temp, %energy recharged
+            heuristic(Temp, Target, R), %find the heuristic from the charging station
+            estrella(Target, [Temp], R, Continuation, _), %Continuation is the new Tupledpath
+            Continuation = (Road, _, _),
+            append(Road, Many, Final), % appending the new path to the previous path
+            reverse(Final, [_Init|Path]),
+            moveNTopup(Path, Agent, Target)
+        ;   otherwise
+        ->  %without charging, the TupledPath is the path
+            Best=(TupledPath, _, _), 
+            reverse(TupledPath, [_Init|Path]),
+            moveNTopup(Path, Agent, Target)
+        )
     ).
 
-
-moveNTopup([], _, _, _):- !, print("here").
-moveNTopup(Path, Agent, Target, Score):-
-  Path = [(Node, Type)|Rest], 
-  % (Type = empty ->
-    query_world( agent_do_moves, [Agent,[Node]]),
-    ( map_adjacent(Node, _, c(C)) -> 
-        query_world(agent_topup_energy, [Agent, c(C)]), 
-        moveNTopup(Rest, Agent, Target, Score);
-      otherwise -> 
-        moveNTopup(Rest, Agent, Target, Score)
-    ).
-  % otherwise -> 
-  %   query_world(agent_current_position, [Agent, P]),
-  %   query_world(agent_current_energy, [Agent, E]),
-  %   ([(P, empty)], E, Score) = Temp,
-  %   heuristic(Temp, Target, ResultH),
-  %   estrella(Target, [Temp], ResultH, Continuation, Flag),
-  %   Continuation=(TupledPath, _, Score), 
-  %   reverse(TupledPath, [_Init|Path]),
-  %   moveNTopup(Path, Agent, Target, Score)
 heuristic(Path, Target, Result) :-
     Path=([First|Others], Fuel, _),
     First=(Node, _),
@@ -87,6 +68,45 @@ heuristic(Path, Target, Result) :-
     G is L,
     Result is G + H.
 
+moveNTopup([], _, _):- print("here"), !.
+moveNTopup(Path, Agent, Target):-
+  Path = [(Node, _)|Rest], 
+  query_world(check_pos, [Node, Type]),
+  %if the next position it is moving to is blocked ? find new path : move
+  (Type = empty ->
+    query_world( agent_do_moves, [Agent,[Node]]),
+    writeln(Node),
+    ( map_adjacent(Node, _, c(C)) -> 
+        query_world(agent_topup_energy, [Agent, c(C)]), 
+        moveNTopup(Rest, Agent, Target);
+      otherwise -> 
+        moveNTopup(Rest, Agent, Target)
+    );
+  otherwise -> writeln("Recompute"), query_world(check_pos, [Node, Type]),
+    (Type = empty -> 
+      query_world( agent_current_position, [Agent, P]),
+      query_world( agent_current_energy, [Agent, E]),
+      ([(Node, empty)], E, _) = Temp, %energy recharged
+      heuristic(Temp, Target, R), %find the heuristic from the charging station
+      writeln(E),
+      writeln(R),
+      estrella(Target, [Temp], R, Continuation, _), %Continuation is the new Tupledpath
+      Continuation = (Road, _, _),
+      reverse(Road, [_Init|Path]),
+      moveNTopup(Path, Agent, Target)
+    ); 
+    otherwise -> print("invalid"), fail
+  ).
+
+%children get both the node and its node type
+children([], []).
+children(Node, Children):-
+  setof((A, B) , search(Node, A, B), Children).
+
+checkRepeated(Children, Current, NonRepeated) :-
+    Current = (Path, _, _),
+    exclude([P]>>memberchk(P, Path), Children, NonRepeated).
+
 %random taking a number of path from existing tree
 sampleNElements(0, _, Temp, Result):-
   Temp = Result, !.
@@ -99,6 +119,7 @@ sampleNElements(Counter, List, Temp, Result):-
   NewCounter is Counter - 1,
   sampleNElements(NewCounter, NewList, NewTemp, Result).
 
+
 estrella(Target, [([(Target, Type)|Path], Fuel, Score)|Rest], InitialScore, BestPath, Flag):-
   %if the path still gives agent a fuel above 20, then it is the final path,
   (Fuel > 20 ->  ([(Target, Type)|Path], Fuel, Score) = BestPath, 0 = Flag,!
@@ -108,28 +129,24 @@ estrella(Target, [([(Target, Type)|Path], Fuel, Score)|Rest], InitialScore, Best
 estrella(Target, Agenda, InitialScore, BestPath, Flag) :-
   length(Agenda, Length),
   query_world(check_pos, [Target, Type]),
-  map_adjacent(Target, _, T),
-  ( Type=empty -> T=empty ->
+  (Type = empty ->
     (Length > 1000 -> sampleNElements(500, Agenda, [], TheAgenda)
     ; otherwise -> Agenda = TheAgenda),
     TheAgenda = [Path|Paths],
     Path = ([(Current, _)|Rest], Fuel, Score),
     children(Current, Children),
-    Current = (Path, _, _),
-    exclude([P]>>memberchk(P, Path), Children, Result),
+    checkRepeated(Children, Path, Result),
     processPath(Result, Path, Target, NewPath, 0, F),
     %return the path back to solve_task, so we can find a continued path towards the target
-    (F = 1 -> writeln("INSIDE"), NewPath = BestPath,  1 = Flag, !
-      ; otherwise -> 
-        addChildren(Result, NewPath, Paths, InitialScore, NewAgenda),
-        estrella(Target, NewAgenda, InitialScore, BestPath, Flag)
+    (F = 1 -> writeln("INSIDE"), NewPath = BestPath,  1 = Flag, !;
+    otherwise -> 
+      addChildren(Result, NewPath, Paths, InitialScore, NewAgenda),
+      estrella(Target, NewAgenda, InitialScore, BestPath, Flag)
     )
+  ; otherwise -> fail
   ).
 
-%children get both the node and its node type
-children([], []).
-children(Node, Children):-
-  setof((A, B) , search(Node, A, B), Children).
+
 
 addChildren([], _, Agenda, InitialScore, Result):-
   Agenda = Result.
@@ -167,10 +184,6 @@ processPath(Children, CurrentPath, Target, Result, Temp, Flag):-
   (Path, NewFuel, Score) = NewPath,
   processPath(Kids, NewPath, Target, Result, 1, Flag )
   ; otherwise -> processPath(Kids, CurrentPath, Target, Result, Temp, Flag)).
-
-checkRepeated(Children, Current, NonRepeated) :-
-    Current = (Path, _, _),
-    exclude([P]>>memberchk(P, Path), Children, NonRepeated).
 
 getNElements(0, List, Temp, Result):-
   Temp = Result.
