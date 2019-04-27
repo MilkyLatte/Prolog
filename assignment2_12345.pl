@@ -82,7 +82,8 @@ moveNTopup(Path, Agent, Target):-
       otherwise -> 
         moveNTopup(Rest, Agent, Target)
     );
-  otherwise -> writeln("Recompute"), query_world(check_pos, [Node, Type]),
+  otherwise -> writeln("Recompute"), 
+  query_world(check_pos, [Target, Type]),
     (Type = empty -> 
       query_world( agent_current_position, [Agent, P]),
       query_world( agent_current_energy, [Agent, E]),
@@ -138,7 +139,7 @@ estrella(Target, Agenda, InitialScore, BestPath, Flag) :-
     checkRepeated(Children, Path, Result),
     processPath(Result, Path, Target, NewPath, 0, F),
     %return the path back to solve_task, so we can find a continued path towards the target
-    (F = 1 -> writeln("INSIDE"), NewPath = BestPath,  1 = Flag, !;
+    (F = 1 -> writeln("INSIDE"), NewPath = BestPath, 1 = Flag, !;
     otherwise -> 
       addChildren(Result, NewPath, Paths, InitialScore, NewAgenda),
       estrella(Target, NewAgenda, InitialScore, BestPath, Flag)
