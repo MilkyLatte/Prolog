@@ -67,11 +67,13 @@ find_actor_o(Actors, A, Visited) :-
   -> writeln("Low fuel"),
      find_station(Agent, Station),
      [FP|Rest] = Station,
-     map_adjacent(FP, _, c(C)),
-     reverse(Rev, Station),
-     [First|Path] = Rev,
-     query_world(agent_do_moves, [Agent, Path]),
-     query_world(agent_topup_energy, [Agent, c(C)]);
+     [TG|RRest] = Rest,
+  %    map_adjacent(FP, _, c(C)),
+  %    reverse(Rev, Station),
+  %    [First|Path] = Rev,
+  %    query_world(agent_do_moves, [Agent, Path]),
+  %    query_world(agent_topup_energy, [Agent, c(C)]);
+    solve_task(go(TG), _);
     otherwise
   -> true), 
   !,
