@@ -29,12 +29,12 @@ search(F,N,O) :-
 solve_task(Task, Cost) :-
     Task=go(Target),
     query_world(check_pos, [Target, Type]),
+    my_agent(Agent),
     query_world(agent_current_position, [Agent, P]),
     query_world(agent_current_energy, [Agent, E]),
     map_adjacent(Target, _, T),
     (   Type=empty -> T=empty
-    ->  my_agent(Agent),
-        
+    ->  
         ([(P, empty)], E, Cost) = Initial,
         heuristic(Initial, Target, Result), % find the initial heuristic from P to Target
         estrella(Target, [Initial], Result, Best, Flag),
