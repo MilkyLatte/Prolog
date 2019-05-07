@@ -1,4 +1,4 @@
-candidate_number(39473).
+candidate_number(39572).
 
 %%%%%%%%%% Useful predicates %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% backtracking depth-first search, needs to be changed to agenda-based A*
@@ -29,11 +29,12 @@ search(F,N,O) :-
 solve_task(Task, Cost) :-
     Task=go(Target),
     query_world(check_pos, [Target, Type]),
+    query_world(agent_current_position, [Agent, P]),
+    query_world(agent_current_energy, [Agent, E]),
     map_adjacent(Target, _, T),
     (   Type=empty -> T=empty
     ->  my_agent(Agent),
-        query_world(agent_current_position, [Agent, P]),
-        query_world(agent_current_energy, [Agent, E]),
+        
         ([(P, empty)], E, Cost) = Initial,
         heuristic(Initial, Target, Result), % find the initial heuristic from P to Target
         estrella(Target, [Initial], Result, Best, Flag),
@@ -53,6 +54,10 @@ solve_task(Task, Cost) :-
             reverse(TupledPath, [_Init|Path]),
             moveNTopup(Path, Agent, Target)
         )
+    ; map_adjacent(P, Target, _)
+    -> ([(P, empty)], E, Cost) = Initial,
+        heuristic(Initial, Target, Result), % find the initial heuristic from P to Target
+        estrella(Target, [Initial], Result, Best, Flag)
     ).
 
 heuristic(Path, Target, Result) :-
