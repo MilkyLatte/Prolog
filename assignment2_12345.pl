@@ -32,7 +32,7 @@ solve_task(Task, Cost) :-
     my_agent(Agent),
     query_world(agent_current_position, [Agent, P]),
     query_world(agent_current_energy, [Agent, E]),
-    map_adjacent(Target, _, T),
+    (map_adjacent(Target, _, T),
     (   Type=empty -> T=empty
     ->  
         ([(P, empty)], E, Cost) = Initial,
@@ -54,10 +54,15 @@ solve_task(Task, Cost) :-
             reverse(TupledPath, [_Init|Path]),
             moveNTopup(Path, Agent, Target)
         )
+      )
     ; map_adjacent(P, Target, _)
     -> ([(P, empty)], E, Cost) = Initial,
+        writeln("Here"),
         heuristic(Initial, Target, Result), % find the initial heuristic from P to Target
-        estrella(Target, [Initial], Result, Best, Flag)
+        estrella(Target, [Initial], Result, Best, Flag),
+        Best=(TupledPath, _, _), 
+        reverse(TupledPath, [_Init|Path]),
+        moveNTopup(Path, Agent, Target)
     ).
 
 heuristic(Path, Target, Result) :-
